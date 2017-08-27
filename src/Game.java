@@ -4,13 +4,17 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 
 import javax.swing.JFrame;
 import javax.swing.Timer;
 
 public class Game extends JFrame {
 	private static final long serialVersionUID = 1L;
+	
+	/******** GAME CONSTANTS ***********/
+	private static final int HEIGHT = 550;
+	private static final int BOARD_WIDTH = 240;
+	private static final int  SIDE_WIDTH = 209;
 	
 	// Game Board
 	private GameBoard board;
@@ -25,9 +29,17 @@ public class Game extends JFrame {
 	// Timer for game animation
 	private Timer timer;
 	
+	// Info about game pieces
+	private GamePiece currentShape;
+	private GamePiece nextShape;
+	private int rotation = 0;
+	private int pieceHeight;
+	private int pieceWidth;
+	private boolean dropped = false;
+	
 
 	public Game() {
-		this.currentX = 50;
+		this.currentX = 96;
 		this.currentY = 0;
 		
 		// Initial display of game 
@@ -54,8 +66,8 @@ public class Game extends JFrame {
 		side = new SideBoard(this);
 		
 		// Set panel sizes 
-		board.setPreferredSize(new Dimension(250, 550));
-		side.setPreferredSize(new Dimension(200, 550));
+		board.setPreferredSize(new Dimension(BOARD_WIDTH, HEIGHT));
+		side.setPreferredSize(new Dimension(SIDE_WIDTH, HEIGHT));
 		
 		// Add to game 
 		this.add(board, BorderLayout.CENTER);
@@ -71,10 +83,32 @@ public class Game extends JFrame {
 	}
 	
 	/*
-	 *  START GAME 
+	 *  START GAME
 	 */
 	private void start() {
+		newPiece();	
+	}
+
+	/*
+	 *  MANIPULATE GAME PIECE
+	 */
+	public void newPiece() {
+		this.currentShape = GamePiece.getRandom();
+		setPieceWidth();
+		setPieceHeight();
+		this.currentX = 96;
+		this.currentY = 0;
 		
+	}
+	
+	private void rotate() {
+		if (currentShape != GamePiece.OBlock) {
+			if (rotation != 3)
+				this.rotation++;
+			else rotation = 0;
+			setPieceWidth();
+			setPieceHeight();
+		}
 	}
 	
 
@@ -89,6 +123,26 @@ public class Game extends JFrame {
 		return this.currentY;
 	}
 	
+	public GamePiece getCurrentPiece() {
+		return this.currentShape;
+	}
+	
+	public int getRotation() {
+		return this.rotation;
+	}
+	
+	public int getPieceHeight() {
+		return this.pieceHeight;
+	}
+	
+	public int getPieceWidth() {
+		return this.pieceWidth;
+	}
+	
+	public boolean isDropped() {
+		return this.dropped;
+	}
+	
 	/*
 	 *  MUTATORS
 	 */
@@ -98,6 +152,22 @@ public class Game extends JFrame {
 	
 	public void setCurrentY(int _y) {
 		this.currentY = _y;
+	}
+	
+	private void setPieceHeight() {
+		if (currentShape != GamePiece.OBlock)
+			this.pieceHeight = currentShape.getCoords()[rotation].length;
+		else this.pieceHeight = 2;
+	}
+	
+	private void setPieceWidth() {
+		if (currentShape!= GamePiece.OBlock) 
+			this.pieceWidth = currentShape.getCoords()[rotation][0].length;
+		else this.pieceWidth = 2;
+	}
+	
+	public void setDropped(boolean _dropped) {
+		this.dropped = _dropped;
 	}
 
 	/*
@@ -111,11 +181,16 @@ public class Game extends JFrame {
 			switch (e.getKeyCode()) {
 			
 			case KeyEvent.VK_LEFT:
-				board.left();
+				board.horizontalMove(0);
 				break;
 				
 			case KeyEvent.VK_RIGHT:
-				board.right();
+				board.horizontalMove(1);
+				break;
+				
+			case KeyEvent.VK_UP:
+				rotate();
+				board.repaint();
 				break;
 				
 			default: break;
@@ -127,8 +202,16 @@ public class Game extends JFrame {
 	// for timer
 	class Animate implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
-			if (currentY != 504)
+			if (!dropped){
 				board.dropDown();
+			}
+			else {
+				newPiece();
+				board.repaint();
+				dropped = false;
+				timer.stop();
+				timer.start();
+			}
 		}
 	}
 		
