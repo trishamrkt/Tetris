@@ -8,7 +8,7 @@ public class GameBoard extends JPanel{
 	private static final long serialVersionUID = 1L;
 	
 	/******* PANEL CONSTANTS *****/
-	private static final int TILE_SIZE = 25;
+	private static final int TILE_SIZE = 24;
 	private static final int TILE_MOVE = 24;
 	private static final Color BOARD_COLOUR = new Color(47, 51, 56);
 	private static final int MAX_Y = 504;
@@ -20,8 +20,17 @@ public class GameBoard extends JPanel{
 	// Graphics container
 	Graphics2D g2;
 	
+	// Game board tiles
+	private Color[][] tiles = new Color[22][10];
+	
 	public GameBoard(Game _tetris) {
 		this.tetris = _tetris;
+		
+		for (int row = 0; row < tiles.length; row++) {
+			for (int col = 0; col < tiles[0].length; col++) {
+				tiles[row][col] = null;
+			}
+		}
 	}
 
 	@Override
@@ -39,6 +48,7 @@ public class GameBoard extends JPanel{
 		// Set background colour
 		this.setBackground(BOARD_COLOUR);
 		
+		drawExisting();
 		drawCurrentPiece();
 		
 	}
@@ -46,6 +56,16 @@ public class GameBoard extends JPanel{
 	/*
 	 * Draw game pieces
 	 */
+	private void drawExisting() {
+		for (int i = 0; i < 22; i++) {
+			for (int j = 0; j < 10; j++) {
+				if (tiles[i][j] != null) {
+					drawTile(g2, j * TILE_MOVE, i * TILE_MOVE,tiles[i][j]);
+				}
+			}
+		}
+	}
+	
 	private void drawCurrentPiece() {
 		GamePiece current = tetris.getCurrentPiece();
 		int rotation = tetris.getRotation();
@@ -66,7 +86,6 @@ public class GameBoard extends JPanel{
 					drawTile(g2, x, y, current.getColor());
 				}
 			}
-			System.out.println();
 		}
 		
 	}
@@ -101,9 +120,29 @@ public class GameBoard extends JPanel{
 		if (projected >= MAX_Y) { 
 			valid = false;
 			tetris.setDropped(true);
+			placeOnBoard(tetris.getCurrentPiece().getColor());
 		}
 		
 		return valid;
+	}
+	
+	/*
+	 *  GAME LOGIC
+	 */
+	// place piece in array 
+	private void placeOnBoard(Color bg) {
+		int topR = tetris.getCurrentRow();
+		int topC = tetris.getCurrentCol();
+		
+		int[][] coords = tetris.getCurrentPiece().getCoords()[tetris.getRotation()];
+		
+		for (int row = 0; row < tetris.getPieceHeight(); row++) {
+			for (int col = 0; col < tetris.getPieceWidth(); col++) {
+				if (coords[row][col] == 1) {
+					tiles[topR + row][topC + col] = bg;
+				}
+			}
+		}
 	}
 	
 	
@@ -117,6 +156,7 @@ public class GameBoard extends JPanel{
 		
 		if (drop) {
 			tetris.setCurrentY(tetris.getCurrentY() + TILE_MOVE);
+			tetris.setCurrentR(tetris.getCurrentRow() + 1);
 			this.repaint();
 		}
 	}
@@ -127,6 +167,7 @@ public class GameBoard extends JPanel{
 	public void horizontalMove(int dir) {
 		int projected;
 		boolean valid = false;
+		int col = tetris.getCurrentCol();
 		
 		// Set projected x value
 		if (dir == 0) projected = tetris.getCurrentX() - TILE_MOVE;
@@ -137,8 +178,14 @@ public class GameBoard extends JPanel{
 		
 		//Perform move
 		if (valid) {
-			if (dir == 1) tetris.setCurrentX(tetris.getCurrentX() + TILE_MOVE);
-			else tetris.setCurrentX(projected);
+			if (dir == 1)  {
+				tetris.setCurrentX(tetris.getCurrentX() + TILE_MOVE);
+				tetris.setCurrentC(col + 1);
+			}
+			else {
+				tetris.setCurrentX(projected);
+				tetris.setCurrentC(col - 1);
+			}
 			this.repaint();
 		}
 	}

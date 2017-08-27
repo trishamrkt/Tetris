@@ -14,7 +14,7 @@ public class Game extends JFrame {
 	/******** GAME CONSTANTS ***********/
 	private static final int HEIGHT = 550;
 	private static final int BOARD_WIDTH = 240;
-	private static final int  SIDE_WIDTH = 209;
+	private static final int  SIDE_WIDTH = 210;
 	
 	// Game Board
 	private GameBoard board;
@@ -36,6 +36,9 @@ public class Game extends JFrame {
 	private int pieceHeight;
 	private int pieceWidth;
 	private boolean dropped = false;
+	private int currentRow = 0;
+	private int currentCol = 4;
+	
 	
 
 	public Game() {
@@ -98,6 +101,8 @@ public class Game extends JFrame {
 		setPieceHeight();
 		this.currentX = 96;
 		this.currentY = 0;
+		this.currentRow = 0;
+		this.currentCol = 4;
 		
 	}
 	
@@ -115,44 +120,36 @@ public class Game extends JFrame {
 	/*
 	 *  ACCESSORS
 	 */
-	public int getCurrentX() {
-		return this.currentX;
-	}
+	public int getCurrentX() { return this.currentX; }
 	
-	public int getCurrentY() {
-		return this.currentY;
-	}
+	public int getCurrentY() { return this.currentY; }
 	
-	public GamePiece getCurrentPiece() {
-		return this.currentShape;
-	}
+	public GamePiece getCurrentPiece() { return this.currentShape; }
 	
-	public int getRotation() {
-		return this.rotation;
-	}
+	public int getRotation() { return this.rotation; }
 	
-	public int getPieceHeight() {
-		return this.pieceHeight;
-	}
+	public int getPieceHeight() { return this.pieceHeight; }
 	
-	public int getPieceWidth() {
-		return this.pieceWidth;
-	}
+	public int getPieceWidth() { return this.pieceWidth; }
 	
-	public boolean isDropped() {
-		return this.dropped;
-	}
+	public boolean isDropped() { return this.dropped; }
+	
+	public int getCurrentRow() { return this.currentRow; }
+	
+	public int getCurrentCol() { return this.currentCol; }
 	
 	/*
 	 *  MUTATORS
 	 */
-	public void setCurrentX(int _x) {
-		this.currentX = _x;
-	}
+	public void setCurrentX(int _x) { this.currentX = _x; }
 	
-	public void setCurrentY(int _y) {
-		this.currentY = _y;
-	}
+	public void setCurrentY(int _y) { this.currentY = _y; }
+	
+	public void setDropped(boolean _dropped) { this.dropped = _dropped; }
+	
+	public void setCurrentR(int _r) { this.currentRow = _r; }
+	
+	public void setCurrentC(int _c) { this.currentCol = _c; }
 	
 	private void setPieceHeight() {
 		if (currentShape != GamePiece.OBlock)
@@ -166,9 +163,6 @@ public class Game extends JFrame {
 		else this.pieceWidth = 2;
 	}
 	
-	public void setDropped(boolean _dropped) {
-		this.dropped = _dropped;
-	}
 
 	/*
 	 *  KEY AND ACTION LISTENERS
@@ -206,9 +200,11 @@ public class Game extends JFrame {
 				board.dropDown();
 			}
 			else {
+				// create new piece and refresh screen to show animation
 				newPiece();
 				board.repaint();
 				dropped = false;
+				
 				timer.stop();
 				timer.start();
 			}
