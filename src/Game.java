@@ -31,7 +31,6 @@ public class Game extends JFrame {
 	
 	// Info about game pieces
 	private GamePiece currentShape;
-	private GamePiece nextShape;
 	private int rotation = 0;
 	private int pieceHeight;
 	private int pieceWidth;
@@ -97,6 +96,7 @@ public class Game extends JFrame {
 	 */
 	public void newPiece() {
 		this.currentShape = GamePiece.getRandom();
+		this.rotation = 0;
 		setPieceWidth();
 		setPieceHeight();
 		this.currentX = 96;
@@ -185,6 +185,10 @@ public class Game extends JFrame {
 			case KeyEvent.VK_UP:
 				rotate();
 				board.repaint();
+				break;
+				
+			case KeyEvent.VK_DOWN:
+				board.dropDown();
 				break;
 				
 			default: break;

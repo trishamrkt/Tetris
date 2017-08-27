@@ -57,10 +57,10 @@ public class GameBoard extends JPanel{
 	 * Draw game pieces
 	 */
 	private void drawExisting() {
-		for (int i = 0; i < 22; i++) {
-			for (int j = 0; j < 10; j++) {
-				if (tiles[i][j] != null) {
-					drawTile(g2, j * TILE_MOVE, i * TILE_MOVE,tiles[i][j]);
+		for (int row = 0; row < 22; row++) {
+			for (int col = 0; col < 10; col++) {
+				if (tiles[row][col] != null) {
+					drawTile(g2, col * TILE_MOVE, row * TILE_MOVE,tiles[row][col]);
 				}
 			}
 		}
@@ -103,11 +103,22 @@ public class GameBoard extends JPanel{
 	 *  CHECKING METHODS
 	 */
 	// Check if moving left/right is valid
-	private boolean validMove(int projected, boolean horiz) {
+	// dir = 0: left
+	// dir = 1: right
+	private boolean validMove(int projected, int dir) {
 		boolean valid = true;
-		if (horiz) {
-			if (projected >= MAX_X || projected < 0)
+		if (projected >= MAX_X || projected < 0)
+			valid = false;
+		
+		else {
+			int col = tetris.getCurrentCol();
+			int row = tetris.getCurrentRow();
+			int width = tetris.getPieceWidth();
+			if (dir == 0 && tiles[row][col - 1] != null)
 				valid = false;
+			else if (dir == 1 && tiles[row][col + width] != null)
+				valid = false;
+			
 		}
 		
 		return (valid);
@@ -122,6 +133,23 @@ public class GameBoard extends JPanel{
 			tetris.setDropped(true);
 			placeOnBoard(tetris.getCurrentPiece().getColor());
 		}
+		else {
+			int height = tetris.getPieceHeight();
+			int width = tetris.getPieceWidth();
+			int[][] coords = tetris.getCurrentPiece().getCoords()[tetris.getRotation()];
+			for (int row = height - 1; row >= 0 && valid; row--) {
+				int nextRow = tetris.getCurrentRow() + row + 1;
+				
+				for (int col = 0; col < width && valid; col++) {
+					int currCol = col + tetris.getCurrentCol();
+					if (tiles[nextRow][currCol] != null && coords[row][col] == 1) {
+						valid = false;
+						tetris.setDropped(true);
+						placeOnBoard(tetris.getCurrentPiece().getColor());
+					}
+				}
+			}
+		}
 		
 		return valid;
 	}
@@ -133,8 +161,11 @@ public class GameBoard extends JPanel{
 	private void placeOnBoard(Color bg) {
 		int topR = tetris.getCurrentRow();
 		int topC = tetris.getCurrentCol();
-		
-		int[][] coords = tetris.getCurrentPiece().getCoords()[tetris.getRotation()];
+		int rotation;
+		if (tetris.getCurrentPiece() == GamePiece.OBlock)
+			rotation = 0;
+		else rotation = tetris.getRotation();
+		int[][] coords = tetris.getCurrentPiece().getCoords()[rotation];
 		
 		for (int row = 0; row < tetris.getPieceHeight(); row++) {
 			for (int col = 0; col < tetris.getPieceWidth(); col++) {
@@ -174,7 +205,7 @@ public class GameBoard extends JPanel{
 		else projected = tetris.getCurrentX() + TILE_MOVE + TILE_MOVE * (tetris.getPieceWidth() - 1);
 		
 		// Check if moving is a valid move
-		valid = validMove(projected, true);
+		valid = validMove(projected, dir);
 		
 		//Perform move
 		if (valid) {
