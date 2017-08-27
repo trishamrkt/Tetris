@@ -4,6 +4,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.Random;
 
 import javax.swing.JFrame;
 import javax.swing.Timer;
@@ -29,12 +30,28 @@ public class Game extends JFrame {
 	// Timer for game animation
 	private Timer timer;
 	
-	// Info about game pieces
+	/*
+	 *  Info about game piece
+	 */
+	// Used to get random next piece
+	private Random rand = new Random();
+	
+	// Holds current piece shape
 	private GamePiece currentShape;
+	
+	// Holds current rotation of piece
 	private int rotation = 0;
+	
+	// Height and width - used for checking valid moves
 	private int pieceHeight;
 	private int pieceWidth;
+	
+	// If thie piece has been dropped
 	private boolean dropped = false;
+	
+	// Coordinates of piece
+	public int[][] coords;
+	
 	private int currentRow = 0;
 	private int currentCol = 4;
 	
@@ -95,7 +112,7 @@ public class Game extends JFrame {
 	 *  MANIPULATE GAME PIECE
 	 */
 	public void newPiece() {
-		this.currentShape = GamePiece.getRandom();
+		this.currentShape = GamePiece.getRandom(rand.nextInt(7));
 		this.rotation = 0;
 		setPieceWidth();
 		setPieceHeight();
@@ -103,6 +120,7 @@ public class Game extends JFrame {
 		this.currentY = 0;
 		this.currentRow = 0;
 		this.currentCol = 4;
+		this.coords = this.currentShape.getCoords()[this.rotation];
 		
 	}
 	
@@ -113,6 +131,7 @@ public class Game extends JFrame {
 			else rotation = 0;
 			setPieceWidth();
 			setPieceHeight();
+			this.coords = this.currentShape.getCoords()[rotation];
 		}
 	}
 	
@@ -188,11 +207,22 @@ public class Game extends JFrame {
 				break;
 				
 			case KeyEvent.VK_DOWN:
-				board.dropDown();
+				timer.setDelay(50);
 				break;
 				
 			default: break;
-				
+			}
+		}
+		
+		@Override
+		public void keyReleased(KeyEvent e) {
+			switch(e.getKeyCode()) {
+			
+			case KeyEvent.VK_DOWN:
+				timer.setDelay(400);
+				break;
+			default:
+				break;
 			}
 		}
 	}
@@ -201,16 +231,16 @@ public class Game extends JFrame {
 	class Animate implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			if (!dropped){
+				timer.stop();
 				board.dropDown();
+				timer.start();
 			}
 			else {
 				// create new piece and refresh screen to show animation
 				newPiece();
 				board.repaint();
 				dropped = false;
-				
-				timer.stop();
-				timer.start();
+				timer.restart();
 			}
 		}
 	}

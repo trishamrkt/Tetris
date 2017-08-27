@@ -1,12 +1,11 @@
 import java.awt.Color;
-import java.util.Random;
 
 public enum GamePiece {
 	/* 
 	 * I-PIECE
 	 */
 	IBlock (
-			new Color(160, 212, 107),
+			new Color(66, 182, 242),
 			4, 
 			new int[][][] {
 				{
@@ -34,7 +33,7 @@ public enum GamePiece {
 	 *  	J-SHAPE
 	 */
 	JBlock (
-			new Color(72, 207, 73),
+			new Color(73, 84, 184),
 			3, 
 			new int[][][] {
 				{
@@ -61,7 +60,7 @@ public enum GamePiece {
 	 *  L-SHAPE
 	 */
 	LBlock (
-			new Color(79, 193, 233),
+			new Color(52, 212, 124),
 			3, 
 			new int[][][] {
 				{
@@ -88,7 +87,7 @@ public enum GamePiece {
 	 *  O-SHAPE
 	 */
 	OBlock (
-			new Color(178, 156, 233),
+			new Color(178, 82, 139),
 			2, 
 			new int[][][] {
 				{
@@ -101,7 +100,7 @@ public enum GamePiece {
 	 *  S-SHAPE
 	 */
 	SBlock (
-			new Color(252, 110, 81),
+			new Color(239, 108, 109),
 			3, 
 			new int[][][] {
 				{
@@ -128,7 +127,7 @@ public enum GamePiece {
 	 *  T-SHAPE
 	 */
 	TBlock (
-			new Color(255, 206, 84),
+			new Color(255, 239, 85),
 			3, 
 			new int[][][] {
 				{
@@ -155,7 +154,7 @@ public enum GamePiece {
 	 *  Z-SHAPE
 	 */
 	ZBlock (
-			new Color(255, 142, 202),
+			new Color(244, 160, 71),
 			3, 
 			new int[][][] {
 				{
@@ -197,15 +196,13 @@ public enum GamePiece {
 	int[][][] getCoords() { return this.coords; }
 	
 	private static GamePiece[] pieces = values();
-	private static Random rand = new Random();
 	
 	/*
 	 *  FOR GAMEPLAY
 	 */
 	// Get the next game piece randomly
-	public static GamePiece getRandom() {
+	public static GamePiece getRandom(int id) {
 		// Get random index
-		int id = rand.nextInt(7);
 		return (pieces[id]);
 	}
 }

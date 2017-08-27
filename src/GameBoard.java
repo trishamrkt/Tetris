@@ -1,6 +1,8 @@
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JPanel;
 
@@ -13,6 +15,8 @@ public class GameBoard extends JPanel{
 	private static final Color BOARD_COLOUR = new Color(47, 51, 56);
 	private static final int MAX_Y = 504;
 	private static final int MAX_X = 240;
+	private static final int NUM_ROWS = 22;
+	private static final int NUM_COLS = 10;
 	
 	// Tetris game
 	private Game tetris;
@@ -21,15 +25,22 @@ public class GameBoard extends JPanel{
 	Graphics2D g2;
 	
 	// Game board tiles
-	private Color[][] tiles = new Color[22][10];
+	private List<ArrayList<Color>> gameTiles = new ArrayList<>();
+	private List<Integer> tilesInRow = new ArrayList<>();
+	private ArrayList<Color> emptyRow = new ArrayList<>();
 	
 	public GameBoard(Game _tetris) {
 		this.tetris = _tetris;
 		
-		for (int row = 0; row < tiles.length; row++) {
-			for (int col = 0; col < tiles[0].length; col++) {
-				tiles[row][col] = null;
+		for (int row = 0; row < NUM_ROWS; row++) {
+			ArrayList<Color> rowTiles = new ArrayList<>();
+			
+			for (int col = 0; col < NUM_COLS; col++) {
+				rowTiles.add(null);
+				emptyRow.add(null);
 			}
+			gameTiles.add(rowTiles);
+			tilesInRow.add(0);
 		}
 	}
 
@@ -57,32 +68,30 @@ public class GameBoard extends JPanel{
 	 * Draw game pieces
 	 */
 	private void drawExisting() {
-		for (int row = 0; row < 22; row++) {
-			for (int col = 0; col < 10; col++) {
-				if (tiles[row][col] != null) {
-					drawTile(g2, col * TILE_MOVE, row * TILE_MOVE,tiles[row][col]);
+		boolean go = true;
+		for (int row = NUM_ROWS - 1; row >= 0 && go; row--) {
+			int numNull = 0;
+			for (int col = 0; col < NUM_COLS; col++) {
+				Color tileColour = gameTiles.get(row).get(col);
+				if (tileColour != null) {
+					drawTile(g2, col * TILE_MOVE, row * TILE_MOVE, tileColour);
 				}
+				else numNull++;
 			}
+			if (numNull == NUM_COLS) go = false;
 		}
 	}
 	
 	private void drawCurrentPiece() {
 		GamePiece current = tetris.getCurrentPiece();
-		int rotation = tetris.getRotation();
-		
-		if (current == GamePiece.OBlock) rotation = 0;
-		
-		int[][] coords = current.getCoords()[rotation];
-		int numRows = coords.length;
-		int numCols = coords[0].length;
 		
 		// loop through the array 
-		for (int row = 0; row < numRows; row++) {
-			int y = tetris.getCurrentY() + (24 * row);
+		for (int row = 0; row < tetris.getPieceHeight(); row++) {
+			int y = tetris.getCurrentY() + (TILE_SIZE * row);
 			
-			for (int col = 0; col < numCols; col++) {
-				if (coords[row][col] == 1){
-					int x = tetris.getCurrentX() + (24 * col);
+			for (int col = 0; col < tetris.getPieceWidth(); col++) {
+				if (tetris.coords[row][col] == 1){
+					int x = tetris.getCurrentX() + (TILE_SIZE * col);
 					drawTile(g2, x, y, current.getColor());
 				}
 			}
@@ -111,14 +120,19 @@ public class GameBoard extends JPanel{
 			valid = false;
 		
 		else {
-			int col = tetris.getCurrentCol();
-			int row = tetris.getCurrentRow();
+			int currCol = tetris.getCurrentCol();
+			int currRow = tetris.getCurrentRow();
 			int width = tetris.getPieceWidth();
-			if (dir == 0 && tiles[row][col - 1] != null)
-				valid = false;
-			else if (dir == 1 && tiles[row][col + width] != null)
-				valid = false;
+			int height = tetris.getPieceHeight();
 			
+			for (int i = height - 1; i >= 0 && valid; i--) {
+				int row = currRow + i;
+				
+				if (dir == 0 && gameTiles.get(row).get(currCol - 1) != null && tetris.coords[i][0] == 1)
+					valid = false;
+				else if (dir == 1 && gameTiles.get(row).get(currCol + width) != null && tetris.coords[i][width - 1] == 1)
+					valid = false;	
+			}
 		}
 		
 		return (valid);
@@ -130,27 +144,29 @@ public class GameBoard extends JPanel{
 		
 		if (projected >= MAX_Y) { 
 			valid = false;
-			tetris.setDropped(true);
-			placeOnBoard(tetris.getCurrentPiece().getColor());
 		}
 		else {
 			int height = tetris.getPieceHeight();
 			int width = tetris.getPieceWidth();
-			int[][] coords = tetris.getCurrentPiece().getCoords()[tetris.getRotation()];
 			for (int row = height - 1; row >= 0 && valid; row--) {
 				int nextRow = tetris.getCurrentRow() + row + 1;
 				
 				for (int col = 0; col < width && valid; col++) {
 					int currCol = col + tetris.getCurrentCol();
-					if (tiles[nextRow][currCol] != null && coords[row][col] == 1) {
+					
+					Color check = gameTiles.get(nextRow).get(currCol);
+					if (check != null && tetris.coords[row][col] == 1) {
 						valid = false;
-						tetris.setDropped(true);
-						placeOnBoard(tetris.getCurrentPiece().getColor());
 					}
 				}
 			}
 		}
 		
+		if (!valid && !tetris.isDropped()) {
+			tetris.setDropped(true);
+			placeOnBoard(tetris.getCurrentPiece().getColor());
+			checkLines();
+		}
 		return valid;
 	}
 	
@@ -161,17 +177,27 @@ public class GameBoard extends JPanel{
 	private void placeOnBoard(Color bg) {
 		int topR = tetris.getCurrentRow();
 		int topC = tetris.getCurrentCol();
-		int rotation;
-		if (tetris.getCurrentPiece() == GamePiece.OBlock)
-			rotation = 0;
-		else rotation = tetris.getRotation();
-		int[][] coords = tetris.getCurrentPiece().getCoords()[rotation];
 		
 		for (int row = 0; row < tetris.getPieceHeight(); row++) {
 			for (int col = 0; col < tetris.getPieceWidth(); col++) {
-				if (coords[row][col] == 1) {
-					tiles[topR + row][topC + col] = bg;
+				
+				if (tetris.coords[row][col] == 1) {
+					int old = tilesInRow.get(topR + row);
+					gameTiles.get(topR + row).set(topC + col, bg);
+					tilesInRow.set(topR + row, old + 1);
 				}
+			}
+		}
+	}
+	
+	private void checkLines() {
+		for (int row = 0; row < NUM_ROWS; row++) {
+			if (tilesInRow.get(row) == NUM_COLS) {
+				gameTiles.remove(row);
+				tilesInRow.remove(row);
+				
+				gameTiles.add(0, emptyRow);
+				tilesInRow.add(0, 0);
 			}
 		}
 	}
