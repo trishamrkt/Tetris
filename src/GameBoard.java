@@ -17,6 +17,7 @@ public class GameBoard extends JPanel{
 	private static final int MAX_X = 240;
 	private static final int NUM_ROWS = 22;
 	private static final int NUM_COLS = 10;
+	private static final int SCORE_PER_LINE = 25;
 	
 	// Tetris game
 	private Game tetris;
@@ -28,6 +29,8 @@ public class GameBoard extends JPanel{
 	private List<ArrayList<Color>> gameTiles = new ArrayList<>();
 	private List<Integer> tilesInRow = new ArrayList<>();
 	private ArrayList<Color> emptyRow = new ArrayList<>();
+	private List<Integer> fullLines = new ArrayList<>();
+	private int numFullLines = 0;
 	
 	public GameBoard(Game _tetris) {
 		this.tetris = _tetris;
@@ -76,7 +79,10 @@ public class GameBoard extends JPanel{
 				if (tileColour != null) {
 					drawTile(g2, col * TILE_MOVE, row * TILE_MOVE, tileColour);
 				}
-				else numNull++;
+				
+				else  {
+					numNull++;
+				}
 			}
 			if (numNull == NUM_COLS) go = false;
 		}
@@ -84,14 +90,16 @@ public class GameBoard extends JPanel{
 	
 	private void drawCurrentPiece() {
 		GamePiece current = tetris.getCurrentPiece();
+		int currentX = tetris.getCurrentX();
+		int currentY = tetris.getCurrentY();
 		
 		// loop through the array 
 		for (int row = 0; row < tetris.getPieceHeight(); row++) {
-			int y = tetris.getCurrentY() + (TILE_SIZE * row);
+			int y = currentY + (TILE_SIZE * row);
 			
 			for (int col = 0; col < tetris.getPieceWidth(); col++) {
 				if (tetris.coords[row][col] == 1){
-					int x = tetris.getCurrentX() + (TILE_SIZE * col);
+					int x = currentX + (TILE_SIZE * col);
 					drawTile(g2, x, y, current.getColor());
 				}
 			}
@@ -148,24 +156,30 @@ public class GameBoard extends JPanel{
 		else {
 			int height = tetris.getPieceHeight();
 			int width = tetris.getPieceWidth();
+			int currentRow = tetris.getCurrentRow();
+			int numPiece = 0;
+			boolean go = true;
 			for (int row = height - 1; row >= 0 && valid; row--) {
-				int nextRow = tetris.getCurrentRow() + row + 1;
+				int nextRow = currentRow + row + 1;
 				
-				for (int col = 0; col < width && valid; col++) {
+				for (int col = 0; col < width && valid && go; col++) {
 					int currCol = col + tetris.getCurrentCol();
 					
-					Color check = gameTiles.get(nextRow).get(currCol);
-					if (check != null && tetris.coords[row][col] == 1) {
-						valid = false;
+					if (tetris.coords[row][col] == 1) {
+						numPiece++;
+						if (gameTiles.get(nextRow).get(currCol) != null) {
+							valid = false;
+						}
 					}
+					if (numPiece == 4) go = false;
 				}
 			}
 		}
 		
 		if (!valid && !tetris.isDropped()) {
-			tetris.setDropped(true);
 			placeOnBoard(tetris.getCurrentPiece().getColor());
 			checkLines();
+			tetris.setDropped(true);
 		}
 		return valid;
 	}
@@ -177,12 +191,19 @@ public class GameBoard extends JPanel{
 	private void placeOnBoard(Color bg) {
 		int topR = tetris.getCurrentRow();
 		int topC = tetris.getCurrentCol();
+		boolean go = true;
 		
-		for (int row = 0; row < tetris.getPieceHeight(); row++) {
+		for (int row = 0; row < tetris.getPieceHeight() && go; row++) {
 			for (int col = 0; col < tetris.getPieceWidth(); col++) {
 				
 				if (tetris.coords[row][col] == 1) {
 					int old = tilesInRow.get(topR + row);
+					
+					if (old == NUM_COLS - 1) {
+						fullLines.add(topR + row);
+						numFullLines++;
+					}
+					
 					gameTiles.get(topR + row).set(topC + col, bg);
 					tilesInRow.set(topR + row, old + 1);
 				}
@@ -191,15 +212,22 @@ public class GameBoard extends JPanel{
 	}
 	
 	private void checkLines() {
-		for (int row = 0; row < NUM_ROWS; row++) {
-			if (tilesInRow.get(row) == NUM_COLS) {
-				gameTiles.remove(row);
-				tilesInRow.remove(row);
-				
-				gameTiles.add(0, emptyRow);
-				tilesInRow.add(0, 0);
-			}
+		int currentScore = tetris.getScore();
+		int newScore = currentScore + SCORE_PER_LINE * numFullLines;
+		
+		tetris.setScore(newScore);
+		
+		for (int i = 0; i < numFullLines; i++) {
+			int row = fullLines.get(i);
+			gameTiles.remove(row);
+			tilesInRow.remove(row);
+			
+			gameTiles.add(0, emptyRow);
+			tilesInRow.add(0, 0);
 		}
+		
+		fullLines = new ArrayList<>();
+		numFullLines = 0;
 	}
 	
 	
@@ -214,6 +242,7 @@ public class GameBoard extends JPanel{
 		if (drop) {
 			tetris.setCurrentY(tetris.getCurrentY() + TILE_MOVE);
 			tetris.setCurrentR(tetris.getCurrentRow() + 1);
+			this.revalidate();
 			this.repaint();
 		}
 	}
@@ -243,6 +272,7 @@ public class GameBoard extends JPanel{
 				tetris.setCurrentX(projected);
 				tetris.setCurrentC(col - 1);
 			}
+			this.revalidate();
 			this.repaint();
 		}
 	}

@@ -180,7 +180,7 @@ public enum GamePiece {
 	
 	private Color colour;
 	private int size;
-	private final int[][][] coords;
+	public final int[][][] coords;
 	
 	GamePiece(Color _colour, int _size, int[][][] _coords) {
 		colour = _colour;

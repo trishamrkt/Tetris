@@ -7,10 +7,14 @@ import java.awt.event.KeyEvent;
 import java.util.Random;
 
 import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 public class Game extends JFrame {
 	private static final long serialVersionUID = 1L;
+	
+	// DELETE 
+	public int numPieces = 0;
 	
 	/******** GAME CONSTANTS ***********/
 	private static final int HEIGHT = 550;
@@ -38,6 +42,7 @@ public class Game extends JFrame {
 	
 	// Holds current piece shape
 	private GamePiece currentShape;
+	private GamePiece nextShape;
 	
 	// Holds current rotation of piece
 	private int rotation = 0;
@@ -55,7 +60,12 @@ public class Game extends JFrame {
 	private int currentRow = 0;
 	private int currentCol = 4;
 	
+	// Paused game
+	private boolean paused = false;
 	
+	/* Game Stats */
+	private int score = 0;
+	private int linesCleared = 0;
 
 	public Game() {
 		this.currentX = 96;
@@ -93,7 +103,7 @@ public class Game extends JFrame {
 		this.add(side, BorderLayout.EAST);
 		
 		// Start timer
-		timer = new Timer(500, new Animate());
+		timer = new Timer(400, new Animate());
 		timer.start();
 		
 		// Add keylistener
@@ -105,14 +115,27 @@ public class Game extends JFrame {
 	 *  START GAME
 	 */
 	private void start() {
+		setNext();
 		newPiece();	
+		setNext();
+	}
+	
+	private void togglePause() {
+		paused = !paused;
+		
+		if (paused) timer.stop();
+		else timer.start();
 	}
 
 	/*
 	 *  MANIPULATE GAME PIECE
 	 */
 	public void newPiece() {
-		this.currentShape = GamePiece.getRandom(rand.nextInt(7));
+		//DELETE
+		this.numPieces++;
+		System.out.println("PIECE #: " + numPieces);
+		/////////////
+		this.currentShape = this.nextShape;
 		this.rotation = 0;
 		setPieceWidth();
 		setPieceHeight();
@@ -120,8 +143,13 @@ public class Game extends JFrame {
 		this.currentY = 0;
 		this.currentRow = 0;
 		this.currentCol = 4;
-		this.coords = this.currentShape.getCoords()[this.rotation];
-		
+		this.coords = this.currentShape.coords[this.rotation];
+		this.board.revalidate();
+		this.board.repaint();
+	}
+	
+	public void setNext() {
+		this.nextShape = GamePiece.getRandom(rand.nextInt(7));
 	}
 	
 	private void rotate() {
@@ -131,7 +159,7 @@ public class Game extends JFrame {
 			else rotation = 0;
 			setPieceWidth();
 			setPieceHeight();
-			this.coords = this.currentShape.getCoords()[rotation];
+			this.coords = this.currentShape.coords[rotation];
 		}
 	}
 	
@@ -157,6 +185,11 @@ public class Game extends JFrame {
 	
 	public int getCurrentCol() { return this.currentCol; }
 	
+	public int getScore() { return this.score; }
+	public int getLinesCleared() { return this.linesCleared; }
+	
+	public GamePiece getNextPiece() { return this.nextShape; }
+	
 	/*
 	 *  MUTATORS
 	 */
@@ -170,15 +203,18 @@ public class Game extends JFrame {
 	
 	public void setCurrentC(int _c) { this.currentCol = _c; }
 	
+	public void setScore(int _sc) { this.score = _sc; }
+	public void setLinesCleared(int _lc) { this.linesCleared = _lc; }
+	
 	private void setPieceHeight() {
 		if (currentShape != GamePiece.OBlock)
-			this.pieceHeight = currentShape.getCoords()[rotation].length;
+			this.pieceHeight = currentShape.coords[rotation].length;
 		else this.pieceHeight = 2;
 	}
 	
 	private void setPieceWidth() {
 		if (currentShape!= GamePiece.OBlock) 
-			this.pieceWidth = currentShape.getCoords()[rotation][0].length;
+			this.pieceWidth = currentShape.coords[rotation][0].length;
 		else this.pieceWidth = 2;
 	}
 	
@@ -203,11 +239,19 @@ public class Game extends JFrame {
 				
 			case KeyEvent.VK_UP:
 				rotate();
+				board.revalidate();
 				board.repaint();
 				break;
 				
 			case KeyEvent.VK_DOWN:
-				timer.setDelay(50);
+				if (!dropped) {
+					timer.stop();
+					board.dropDown();
+				}
+				break;
+			
+			case KeyEvent.VK_P:
+				togglePause();
 				break;
 				
 			default: break;
@@ -216,39 +260,44 @@ public class Game extends JFrame {
 		
 		@Override
 		public void keyReleased(KeyEvent e) {
-			switch(e.getKeyCode()) {
+			switch (e.getKeyCode()) {
 			
 			case KeyEvent.VK_DOWN:
-				timer.setDelay(400);
-				break;
-			default:
-				break;
+				timer.restart();
 			}
 		}
 	}
 	
 	// for timer
 	class Animate implements ActionListener {
+		
 		public void actionPerformed(ActionEvent e) {
 			if (!dropped){
-				timer.stop();
 				board.dropDown();
-				timer.start();
 			}
 			else {
 				// create new piece and refresh screen to show animation
 				newPiece();
-				board.repaint();
+				setNext();
 				dropped = false;
+				
+				side.revalidate();
+				side.repaint();
+				
 				timer.restart();
-			}
+			}		
 		}
 	}
 		
 	public static void main(String[] args) {
-		// Initialize game
-		Game tetris = new Game();
-		tetris.setVisible(true);
+		SwingUtilities.invokeLater(new Runnable() {
+			
+			@Override
+			public void run() {
+				Game tetris = new Game();
+				tetris.setVisible(true);
+			}
+		});
 	}
 
 }
